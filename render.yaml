@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: cashflow-site
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_EMAIL
+        value: chirchirlamec@gmail.com
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DATABASE_PATH
+        value: /var/data/cashflow.db
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1

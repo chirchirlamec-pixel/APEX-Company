@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>cashflow.site Admin</title>
+<style>
+:root{--purple:#7412a0;--ink:#20233d;--muted:#687087;--line:#dce0ec;--bg:#f3f7ff;--card:#fff;--green:#08743d;--greenbg:#d9fbe4;--amber:#ad6b2d;--amberbg:#fff0dc;--red:#a32a2a;--redbg:#fde3e3;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
+.brand{font-weight:900;font-size:20px;color:var(--purple);letter-spacing:-.5px}
+.who{font-size:13px;color:var(--muted)}.who b{color:var(--ink)}
+.notice{background:var(--amberbg);color:var(--amber);padding:10px 16px;font-size:13px;font-weight:600}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px}
+.tabs button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:99px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--purple);color:#fff;border-color:var(--purple)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8b43b1;outline-offset:2px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.stat small{display:block;color:var(--muted);font-weight:600}.stat strong{font-size:24px;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+.panel h2{margin:0 0 4px;font-size:18px}.panel p.h{margin:0 0 14px;color:var(--muted);font-size:13px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle;font-variant-numeric:tabular-nums}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pill{display:inline-block;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:800}
+.p-pending{background:var(--amberbg);color:var(--amber)}.p-ok{background:var(--greenbg);color:var(--green)}.p-bad{background:var(--redbg);color:var(--red)}
+.b{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;background:var(--purple);color:#fff}
+.b.l{background:#f2eafa;color:var(--purple)}.b.d{background:var(--redbg);color:var(--red)}.b+.b{margin-left:6px}
+form.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
+input,select{font:inherit;padding:9px 10px;border:1px solid #cfd5e6;border-radius:10px;background:#fff;color:var(--ink);min-width:0}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.grid5>*{min-width:0}
+@media(max-width:700px){.grid5{grid-template-columns:1fr}}
+.bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--purple)}
+.fine{font-size:12px;color:var(--muted)}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1e2037;color:#fff;padding:11px 16px;border-radius:12px;display:none;max-width:90%;text-align:center;z-index:5}
+a{color:var(--purple);font-weight:700}
+</style></head><body>
+<header>
+  <div><span class="brand">cashflow.site</span> <span class="who">Admin dashboard</span></div>
+  <div class="who">Administrator: <b>Hakim Ray</b> &middot; <a href="cashflow.html">View site</a></div>
+</header>
+<div class="notice">Prototype with example data. Changes are kept in this browser only, there is no sign-in, and no money is moved. A live version needs a backend and a payment provider.</div>
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="view"></div>
+</div>
+<div id="toast" role="status"></div>
+<script>
+var KEY='cashflow-admin-v1';
+var DAYS=['Mon','Tue','Wed','Thu','Fri'];
+var seed={
+  rate:15, budget:50000, tab:'products',
+  products:[
+    {id:1,name:'Herbal tea blend',seller:'Sample Seller A',status:'approved'},
+    {id:2,name:'Plant extract drops',seller:'Sample Seller B',status:'pending'},
+    {id:3,name:'Dried herb jar',seller:'Sample Seller C',status:'approved'},
+    {id:4,name:'Herbal powder pouch',seller:'Sample Seller D',status:'pending'},
+    {id:5,name:'Herbal oil bottle',seller:'Sample Seller E',status:'approved'}
+  ],
+  schedule:{Mon:1,Tue:0,Wed:3,Thu:0,Fri:5},
+  surveys:[
+    {id:1,name:'Daily expenditure',responses:128,target:200,status:'pending'},
+    {id:2,name:'Mobile data usage',responses:240,target:300,status:'live'},
+    {id:3,name:'WhatsApp usage',responses:35,target:250,status:'pending'}
+  ],
+  members:[
+    {id:1,name:'Member 1041',views:42,flagged:0,pay:'pending'},
+    {id:2,name:'Member 1077',views:120,flagged:35,pay:'pending'},
+    {id:3,name:'Member 1102',views:18,flagged:0,pay:'approved'},
+    {id:4,name:'Member 1188',views:64,flagged:4,pay:'pending'}
+  ]
+};
+var S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.products)S=JSON.parse(JSON.stringify(seed));
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function kes(n){return 'KSh '+Number(n).toLocaleString('en-KE')}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},2600)}
+function eligible(m){return Math.max(0,m.views-m.flagged)}
+function totals(){
+  var el=0,owed=0,paid=0;
+  S.members.forEach(function(m){var a=eligible(m)*S.rate;el+=eligible(m);if(m.pay==='paid')paid+=a;else owed+=a});
+  return {el:el,owed:owed,paid:paid};
+}
+function stats(){
+  var t=totals(),pend=S.products.filter(function(p){return p.status==='pending'}).length;
+  var items=[['Products awaiting approval',pend],['Reward rate',kes(S.rate)+' / view'],['Eligible views',t.el],['Owed to members',kes(t.owed)],['Campaign budget left',kes(S.budget-t.owed-t.paid)]];
+  document.getElementById('stats').innerHTML=items.map(function(i){return '<div class="stat"><small>'+i[0]+'</small><strong>'+i[1]+'</strong></div>'}).join('');
+}
+var AK='cashflow-access-v1';
+function AL(){var a;try{a=JSON.parse(localStorage.getItem(AK))}catch(e){}a=a||{};a.fee=a.fee||100;a.payee=a.payee||'';a.requests=a.requests||[];return a}
+function AS(a){try{localStorage.setItem(AK,JSON.stringify(a))}catch(e){}}
+var TABS=[['access','Access fees'],['products','Products'],['schedule','Weekday schedule'],['surveys','Survey campaigns'],['rewards','Reward rate'],['payments','Views and payments']];
+function tabs(){
+  var h=document.getElementById('tabs');
+  h.innerHTML=TABS.map(function(t){return '<button role="tab" aria-selected="'+(S.tab===t[0])+'" data-t="'+t[0]+'">'+t[1]+'</button>'}).join('');
+  h.querySelectorAll('button').forEach(function(b){b.onclick=function(){S.tab=b.dataset.t;save();render()}});
+}
+function pill(s){var c=s==='approved'||s==='live'||s==='paid'?'p-ok':(s==='rejected'||s==='paused'?'p-bad':'p-pending');return '<span class="pill '+c+'">'+s+'</span>'}
+var V={
+access:function(){
+  var a=AL();
+  var rows=a.requests.length?a.requests.slice().reverse().map(function(r){return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.phone)+'</td><td>'+esc(r.code)+'</td><td>'+kes(r.amount)+'</td><td>'+pill(r.status)+'</td><td>'+
+    (r.status!=='approved'?'<button class="b" data-a="ra" data-id="'+r.id+'">Approve</button>':'')+(r.status!=='rejected'?'<button class="b d" data-a="rr" data-id="'+r.id+'">Reject</button>':'')+'</td></tr>'}).join(''):'<tr><td colspan="6" class="fine">No payments submitted yet. Requests appear here after someone pays and submits their M-Pesa code on the site.</td></tr>';
+  var L=[];try{L=JSON.parse(localStorage.getItem('cashflow-leads-v1'))||[]}catch(e){}
+  var lrows=L.length?L.slice().reverse().map(function(m){return '<tr><td>'+esc(m.name)+'</td><td>'+esc(m.phone)+'</td><td>'+esc(m.msg)+'</td><td>'+new Date(m.at).toLocaleString('en-KE')+'</td></tr>'}).join(''):'<tr><td colspan="4" class="fine">No messages yet. Customers can leave one through Ray AI.</td></tr>';
+  var msgs='<div class="panel"><h2>Messages from Ray AI</h2><p class="h">Customers who asked to reach you while you were away.</p><div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>Message</th><th>Received</th></tr></thead><tbody>'+lrows+'</tbody></table></div></div>';
+  return msgs+'<div class="panel"><h2>Access fee settings</h2><p class="h">Members pay this fee to open the site. Use a registered Till or Paybill number where you can. Never share your M-Pesa PIN.</p>'+
+   '<form class="row" id="fee"><label>Fee (KSh)<input id="fv" type="number" min="1" step="1" value="'+a.fee+'" required></label><label>Pay to (M-Pesa number)<input id="pv" value="'+esc(a.payee)+'" placeholder="Enter the number members pay" maxlength="20"></label><button class="b" type="submit">Save</button></form></div>'+
+   '<div class="panel"><h2>Payments to approve</h2><p class="h">Before approving, match the code, amount and phone to the M-Pesa SMS on your own phone. Approving lets that member into the site.</p><div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>M-Pesa code</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+},
+products:function(){
+  var rows=S.products.map(function(p){return '<tr><td>'+esc(p.name)+'</td><td>'+esc(p.seller)+'</td><td>'+pill(p.status)+'</td><td>'+
+    (p.status!=='approved'?'<button class="b" data-a="pa" data-id="'+p.id+'">Approve</button>':'')+
+    (p.status!=='rejected'?'<button class="b d" data-a="pr" data-id="'+p.id+'">Reject</button>':'')+'</td></tr>'}).join('');
+  return '<div class="panel"><h2>Add a product</h2><p class="h">New products start as pending. Check the seller and the listing text before approving. Avoid health claims you cannot support.</p>'+
+   '<form class="row" id="addp"><label>Product name<input id="pn" required maxlength="60"></label><label>Seller<input id="ps" required maxlength="60"></label><button class="b" type="submit">Add product</button></form></div>'+
+   '<div class="panel"><h2>Products</h2><div class="tw"><table><thead><tr><th>Product</th><th>Seller</th><th>Status</th><th>Action</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+},
+schedule:function(){
+  var ok=S.products.filter(function(p){return p.status==='approved'});
+  var cells=DAYS.map(function(d){
+    var opts='<option value="0">Open slot</option>'+ok.map(function(p){return '<option value="'+p.id+'"'+(S.schedule[d]==p.id?' selected':'')+'>'+esc(p.name)+'</option>'}).join('');
+    return '<label>'+d+'<select data-day="'+d+'">'+opts+'</select></label>';
+  }).join('');
+  var open=DAYS.filter(function(d){return !S.schedule[d]||!ok.some(function(p){return p.id==S.schedule[d]})}).length;
+  return '<div class="panel"><h2>Weekday advertisements</h2><p class="h">One featured product per day. Only approved products can be scheduled. '+open+' of 5 days are open.</p><div class="grid5">'+cells+'</div></div>';
+},
+surveys:function(){
+  var rows=S.surveys.map(function(s){var pct=Math.round(s.responses/s.target*100);
+   return '<tr><td>'+esc(s.name)+'</td><td>'+s.responses+' / '+s.target+'<div class="bar"><i style="width:'+pct+'%"></i></div></td><td>'+pill(s.status)+'</td><td>'+
+   (s.status!=='live'?'<button class="b" data-a="sl" data-id="'+s.id+'">Approve to go live</button>':'<button class="b l" data-a="sp" data-id="'+s.id+'">Pause</button>')+'</td></tr>'}).join('');
+  return '<div class="panel"><h2>Survey campaigns</h2><p class="h">Review each campaign before it opens to members. Response counts are examples.</p><div class="tw"><table><thead><tr><th>Campaign</th><th>Responses</th><th>Status</th><th>Action</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+},
+rewards:function(){/* reward rate */
+  var t=totals(),used=t.owed+t.paid,pct=Math.min(100,Math.round(used/S.budget*100));
+  return '<div class="panel"><h2>Reward rate</h2><p class="h">Proposed reward per eligible, verified advertisement view. Subject to campaign funding and terms.</p>'+
+   '<form class="row" id="rate"><label>KSh per view<input id="rv" type="number" min="0" step="1" value="'+S.rate+'" required></label><label>Campaign budget (KSh)<input id="bv" type="number" min="0" step="100" value="'+S.budget+'" required></label><button class="b" type="submit">Save</button></form></div>'+
+   '<div class="panel"><h2>Spend against budget</h2><p class="h">'+kes(used)+' committed of '+kes(S.budget)+' ('+pct+'%). At this rate the budget covers '+Math.floor((S.budget-used)/Math.max(S.rate,1))+' more eligible views.</p><div class="bar"><i style="width:'+pct+'%"></i></div></div>';
+},
+payments:function(){
+  var rows=S.members.map(function(m){var e=eligible(m);
+   return '<tr><td>'+esc(m.name)+'</td><td>'+m.views+'</td><td>'+m.flagged+'</td><td>'+e+'</td><td>'+kes(e*S.rate)+'</td><td>'+pill(m.pay)+'</td><td>'+
+   (m.pay==='pending'?'<button class="b" data-a="mp" data-id="'+m.id+'">Approve payout</button>':(m.pay==='approved'?'<button class="b l" data-a="mk" data-id="'+m.id+'">Mark paid</button>':''))+'</td></tr>'}).join('');
+  return '<div class="panel"><h2>Eligible views and payments</h2><p class="h">Flagged views (duplicates, bots, self-views) are excluded before the reward is calculated. Marking paid only records the status. Send the money through your payment provider first.</p><div class="tw"><table><thead><tr><th>Member</th><th>Views</th><th>Flagged</th><th>Eligible</th><th>Reward</th><th>Status</th><th>Action</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}};
+function render(){
+  stats();tabs();
+  var v=document.getElementById('view');v.innerHTML=V[S.tab]();
+  v.querySelectorAll('[data-a]').forEach(function(b){b.onclick=function(){act(b.dataset.a,+b.dataset.id)}});
+  v.querySelectorAll('select[data-day]').forEach(function(s){s.onchange=function(){S.schedule[s.dataset.day]=+s.value;save();render();toast(s.dataset.day+' updated')}});
+  var f;
+  if(f=document.getElementById('fee'))f.onsubmit=function(e){e.preventDefault();var a=AL();a.fee=Math.max(1,+document.getElementById('fv').value||100);a.payee=document.getElementById('pv').value.trim();AS(a);render();toast('Access fee settings saved')};
+  if(f=document.getElementById('addp'))f.onsubmit=function(e){e.preventDefault();var n=document.getElementById('pn').value.trim(),s=document.getElementById('ps').value.trim();if(!n||!s)return;
+    S.products.push({id:Date.now(),name:n,seller:s,status:'pending'});save();render();toast('Added as pending')};
+  if(f=document.getElementById('rate'))f.onsubmit=function(e){e.preventDefault();S.rate=Math.max(0,+document.getElementById('rv').value||0);S.budget=Math.max(0,+document.getElementById('bv').value||0);save();render();toast('Reward settings saved')};
+}
+function find(list,id){return list.filter(function(x){return x.id===id})[0]}
+function act(a,id){
+  if(a==='ra'||a==='rr'){var A=AL();A.requests.forEach(function(r){if(r.id===id)r.status=a==='ra'?'approved':'rejected'});AS(A);toast(a==='ra'?'Payment approved':'Payment rejected');render();return}
+  if(a==='pa'){find(S.products,id).status='approved';toast('Product approved')}
+  if(a==='pr'){var p=find(S.products,id);p.status='rejected';DAYS.forEach(function(d){if(S.schedule[d]===id)S.schedule[d]=0});toast('Product rejected')}
+  if(a==='sl'){find(S.surveys,id).status='live';toast('Campaign is live')}
+  if(a==='sp'){find(S.surveys,id).status='paused';toast('Campaign paused')}
+  if(a==='mp'){find(S.members,id).pay='approved';toast('Payout approved')}
+  if(a==='mk'){find(S.members,id).pay='paid';toast('Marked as paid')}
+  save();render();
+}
+render();
+</script></body></html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{{ site }}{% endblock %}</title>
+<style>{% include "_style.css" %}</style></head><body>
+<header class="top">
+ <a class="brand" href="{{ url_for('index') }}">cashflow<span style="color:#20bf72">.site</span></a>
+ <nav>
+ {% if request.path.startswith('/admin') and is_admin %}
+  <a href="{{ url_for('admin_dashboard') }}" class="{{ 'on' if request.path=='/admin' }}">Insights</a>
+  <a href="{{ url_for('admin_payments') }}" class="{{ 'on' if 'payments' in request.path }}">Payments</a>
+  <a href="{{ url_for('admin_members') }}" class="{{ 'on' if 'members' in request.path }}">Members</a>
+  <a href="{{ url_for('admin_settings') }}" class="{{ 'on' if 'settings' in request.path }}">Settings</a>
+  <a href="{{ url_for('admin_audit') }}" class="{{ 'on' if 'audit' in request.path }}">Activity</a>
+  <form class="inline" method="post" action="{{ url_for('admin_logout') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="btn l sm">Sign out</button></form>
+ {% else %}
+  <a href="{{ url_for('index') }}">Home</a>
+  {% if member_id %}<a href="{{ url_for('member') }}">My account</a>
+   <form class="inline" method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="btn l sm">Sign out</button></form>
+  {% else %}<a href="{{ url_for('login') }}">Sign in</a><a class="btn sm" href="{{ url_for('register') }}">Register</a>{% endif %}
+ {% endif %}
+ </nav></header>
+<main>
+{% for cat, msg in get_flashed_messages(with_categories=true) %}<div class="flash {{ cat }}" role="status">{{ msg }}</div>{% endfor %}
+{% block body %}{% endblock %}
+</main>
+<footer>{{ site }} &middot; Admin sponsor: {{ sponsor }}</footer>
+</body></html>
